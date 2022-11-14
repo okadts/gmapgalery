@@ -8,6 +8,7 @@
 	import { get } from 'svelte/store';
 	import { nanoid } from 'nanoid';
 	import { tick } from 'svelte';
+	import { page } from '$app/stores';
 
 	let gmapready = false; // cek if Google maps loaded
 	let mapHolder: HTMLElement; // Hold Google maps data
@@ -56,13 +57,40 @@
 			}
 		}
 	} else {
-		sceneId = Object.keys(get(mapSceneStore))[0];
+		// get any sid query string
+		const params = new URLSearchParams($page.url.searchParams)
+		if (params.get('sid') && params.get('sid') !== '') {
+			sceneId = params.get('sid') as string
+		} else {
+			sceneId = Object.keys(get(mapSceneStore))[0];
+		}
 	}
 
 	// handle form editing
 	let showFormEdit = false
 	let showBottonEdit = true
 	let placeDetail = ''
+	const addScene = async () => {
+		if (!gmapready) return
+		sceneId = nanoid()
+		$mapSceneStore[sceneId] = {
+			title: 'Explore Map',
+			subText: 'Explore Bali',
+			lat: -8.4431407,
+			lng: 115.1933933,
+			scene: [
+				{
+					title: 'Place One',
+					subText: 'Place One Desc.',
+					lat: -8.6717295,
+					lng: 115.2317133,
+					pic: []						
+				}
+			]
+		}
+		window.history.replaceState({ additionalInformation: 'Updated the URL with Current Scene' }, $mapSceneStore[sceneId].title, `/?sid=${sceneId}`);
+		return editScene()
+	}
 	const editScene = async () => {
 		if (!gmapready) return
 		doAnim = 0
@@ -78,13 +106,22 @@
 		function fillInAddress() {
 			// Get the place details from the autocomplete object.
 			const place = autocomplete.getPlace();
-			console.log(place)
 			placeDetail = `
 			Name: ${place.name}<br />
 			Lat: ${place.geometry?.location?.lat()}<br />
 			Lng: ${place.geometry?.location?.lng()}<br /><hr style="margin-top: 5px"/>
 			`
 		}
+	}
+	const addSubScene = () => {
+		$mapSceneStore[sceneId].scene.push({
+			title: 'Place One',
+			subText: 'Place One Desc.',
+			lat: -8.6717295,
+			lng: 115.2317133,
+			pic: []						
+		})
+		return tick();
 	}
 	const finishEditScene = () => {
 		if (!gmapready) return
@@ -98,8 +135,8 @@
     };
 	let doAnim = 1
 	$: hideSHow = ["hidden", "visible"][doAnim];
-	$: currentSceneTitle = $mapSceneStore[sceneId].title
-	$: currentSceneSubTitle = $mapSceneStore[sceneId].subText
+	$: currentSceneTitle = ''
+	$: currentSceneSubTitle = ''
 	$: firstAnim = true
 	// animation core
 	const tweenMap = ({
@@ -258,6 +295,9 @@
 		// just make sure we use the same scene id when reload
 		window.history.replaceState({ additionalInformation: 'Updated the URL with Current Scene' }, $mapSceneStore[sceneId].title, `/?sid=${sceneId}`);
 
+		currentSceneTitle = $mapSceneStore[sceneId].title
+		currentSceneSubTitle = $mapSceneStore[sceneId].subText
+
 		// create map options
 		const cameraOptions: google.maps.CameraOptions = {
 			tilt: 0,
@@ -362,9 +402,23 @@
 	  <button class="btn bg-primary-500 btn-base text-white fixed bottom-7 right-1" style="z-index:9999; height: 28px;" on:click={stopRecord}>Stop</button>
 	{:else}	
 		{#if showBottonEdit}
-			<button class="btn bg-primary-500 btn-base text-white fixed bottom-7 left-1" style="z-index:9999; height: 28px;"  on:click={ editScene }>Map Scene</button>
+			<div class=" fixed bottom-7 left-1" style="z-index:9999">
+				<div class="flex justify-between">
+					<div class="flex items-start">
+						<button class="btn bg-primary-500 btn-base text-white" style="height: 28px;"  on:click={ editScene }>Map Scene</button>
+					</div>
+					<button class="btn bg-primary-500 btn-base text-white ml-2" style="height: 28px;"  on:click={ addScene }>Add New</button>
+					<select bind:value={sceneId} class="btn bg-primary-500 btn-base text-white ml-2" on:change="{() => window.location.replace(`/?sid=${sceneId}`)}" style="height: 28px;">
+						{#each Object.keys($mapSceneStore) as sceneKey}
+							<option value={sceneKey}>
+								{$mapSceneStore[sceneKey].title}
+							</option>
+						{/each}
+					</select>
+				</div>
+			</div>
 		{/if}
-		<button class="btn bg-primary-500 btn-base text-white fixed bottom-5 right-1" style="z-index:9999; height: 28px;" on:click={handleRecod}>Record</button>
+		<button class="btn bg-primary-500 btn-base text-white fixed bottom-7 right-1" style="z-index:9999; height: 28px;" on:click={handleRecod}>Record</button>
 	{/if}
 	<div class="h-screen" style="" bind:this={mapHolder}></div>
 	<!-- svelte-ignore a11y-media-has-caption -->
@@ -413,7 +467,7 @@
 							{#each $mapSceneStore[sceneId].scene as { title, subText, lat, lng }, i}
 								<fieldset>
 									<label for="name">
-										<span>Title Scene { i + 1 }</span>
+										<span>Title Scene { i + 1 }&nbsp;<a on:click={addSubScene}>+</a></span>
 										<input type="text" name="name" bind:value={$mapSceneStore[sceneId].scene[i].title} minlength="5" required>
 									</label>
 		
