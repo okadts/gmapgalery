@@ -5,10 +5,10 @@ https://developers.google.com/maps/documentation/javascript/examples/move-camera
 
 ## Setup
 
-Each folder has it's own readme, please follow it
+Each folder has it's own readme, please follow it. 
 Contribute by fork this repo and add other framework implementation like vue, react, solid etc
 
 ## Feedback
 
 For feedback related to this sample, please open a new issue on
-[GitHub](https://github.com/googlemaps/js-samples/issues).
+[GitHub](https://github.com/okadts/gmapgalery/issues).
