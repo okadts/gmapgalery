@@ -1,5 +1,7 @@
 # Google Maps Gallery Animation
 
+If using this repo, please update first
+
 This repo is based on
 https://developers.google.com/maps/documentation/javascript/examples/move-camera-ease.
 
